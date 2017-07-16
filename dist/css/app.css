@@ -1,0 +1,50 @@
+#mapid {
+  width: 100vw;
+  height: 50vh;
+}
+
+.facet-list {
+  height: 400px;
+}
+
+#search-box {
+  margin: 1em 1em 3em;
+  width: calc(100% - 2em);
+  padding: 1em;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+#facet-list,
+#container {
+  max-width: 150px;
+  width: 100%;
+  float: left;
+  padding: 0 1em;
+  margin: 0;
+  list-style: none;
+}
+
+#facet-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+#facet-list li input {
+  margin-right: 6px;
+}
+
+#container {
+  max-width: calc(100% - 150px - 4em);
+}
+
+#container li {
+  padding: 8px 0;
+}
+
+#container em {
+  background: yellow;
+}
+
+/*# sourceMappingURL=app.css.map*/
