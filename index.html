@@ -18,16 +18,72 @@ crossorigin=""/>
 <body>
 
   <main>
-    <!-- <input type="text" autocomplete="off" id="search-box"/> -->
-    <div class="facet-list">
 
-    </div>
+    <section id="home-btn" class="navbar navbar-static-top aisdemo-navbar bg-transparent uk-text-center">
+      <div class="uk-button uk-button-primary btn-form">Rechercher un bien</div>
+    </section>
 
-    <div id="container" class="container">
-      <div id="hits"></div>
-    </div>
+    <section class="home-popup">
 
-    <div id="mapid"></div>
+      <div class="close-popup"><span class="text-hidden">Fermer</span><span class="cross"></span></div>
+
+      <div id="filter-form-wrapper" class=" navbar navbar-static-top aisdemo-navbar filter-list">
+
+        <div class="uk-container uk-container-center search-container">
+
+          <div  id="opts" class="uk-grid">
+
+            <!-- nb-chambre -->
+            <div class="uk-width-small-1-1 uk-width-large-1-4">
+              <div class="ais-root ais-menu ais-root__collapsible ais-root__collapsed">
+                <div class="ais-menu--header ais-header">Nombres de pièces</div>
+                <div class="ais-body ais-menu--body">
+                  <div class="nb-chambre ais-menu--list"></div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- biens -->
+            <div class="uk-width-small-1-1 uk-width-large-1-4">
+              <div class="ais-root ais-menu ais-root__collapsible ais-root__collapsed">
+                <div class="ais-menu--header ais-header">Type de biens</div>
+                <div class="ais-body ais-menu--body">
+                  <div class="bien ais-menu--list"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- arrondissement -->
+            <div class="uk-width-small-1-1 uk-width-large-1-4">
+              <div class="ais-root ais-menu ais-root__collapsible ais-root__collapsed">
+                <div class="ais-menu--header ais-header">Arrondissement</div>
+                <div class="js-wpv-filter-trigger ais-body ais-menu--body">
+                  <div class="arrondissement ais-menu--list"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- type annonce -->
+            <div class="uk-width-small-1-1 uk-width-large-1-4 type-style">
+              <div class="type-annonce ais-body"></div>
+            </div>
+
+          </div><!--opts-->
+
+        </div><!--uk-grid-->
+
+      </div>
+      <div class="uk-grid container-map">
+
+        <div id="map"></div>
+
+        <div id="habitation--list" class="container">
+          <div id="hits"></div>
+        </div>
+
+      </div>
+    </section>
 
   </main>
 

@@ -11,21 +11,23 @@ import $ from 'jquery';
 
 var appID = 'appID';
 var appKey = 'appKey';
-var indexName = 'indexName';
+var indexName = 'testtest_posts_annonce';
 
 var client = algoliasearch(appID, appKey);
 var helper = algoliasearchHelper(client, indexName, {
-  facets: ['post_title', 'type_annonce']
+  facets: ['type_annonce', 'wpcf-property-price', 'wpcf-code-surface', 'taxonomies_hierarchical.arrondissement.lvl0' , 'wpcf-type-bien']
 });
 
 
 //array for popup marker
 var allHits = [];
-var $container =  document.querySelector('.container');
+var $container =  document.querySelector('#opts');
+var LeafIcon;
 
-var map = L.map('mapid',{
+
+var map = L.map('map',{
   center : [43.300000, 5.400000],
-  zoom : 13,
+  zoom : 15,
   doubleClickZoom : false,
   scrollWheelZoom : false,
 });
@@ -35,87 +37,77 @@ createMap(map)
 helper.on('result', function(content) {
   renderHits(content)
   renderFacetList(content);
-  console.log(content)
 });
 
 
-$('.facet-list').on('click', 'input[type=checkbox]', function(e) {
-  var facetValue = $(this).data('facet');
-  helper.toggleRefinement('type_annonce', facetValue)
-        .search();
-});
+facetClick('nb-chambre', 'wpcf-code-surface');
+facetClick('type-annonce', 'type_annonce');
+facetClick('arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0');
+facetClick('bien', 'wpcf-type-bien');
+
+
 
 function renderFacetList(content) {
-
-  $('.facet-list').html(function() {
-
-    return $.map(content.getFacetValues('type_annonce'), function(facet) {
-
-      //create input
-      var checkbox = $('<input type=checkbox>')
-        .data('facet', facet.name)
-        .attr('id', facet.name);
-
-      //refine result
-      if(facet.isRefined) checkbox.attr('checked', 'checked');
-
-      //print input
-      var label = $('<label>').html(facet.name + ' (' + facet.count + ')')
-                              .attr('for', facet.name);
-
-      return $('<li>').append(checkbox).append(label);
-
-    });
-
-  });
-
+  createInput(content, 'nb-chambre', 'wpcf-code-surface', 'checkbox', 'checked')
+  createInput(content, 'type-annonce', 'type_annonce', 'checkbox', 'checked')
+  createInput(content, 'arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0', 'checkbox', 'checked')
+  createInput(content, 'bien', 'wpcf-type-bien', 'checkbox', 'checked')
 }
 
-// $('#search-box').on('keyup', function() {
-//   helper.setQuery($(this).val())
-//         .search();
-// });
+
+function createInput(content, className, facetName, type, isRefined){
+    $('.' + className).html(function() {
+      return $.map(content.getFacetValues(facetName), function(facet) {
+        var status = 'unchecked'
+        if(facet.isRefined) status = 'checked';
+        var templateCheckbox = '<div class="ais-menu--item">'
+                                +'<div class="flex-item">'
+                                  // +'<a href="javascript:void(0);" class="facet-item">'
+                                    +'<input id="'+facet.name+'" type="checkbox" data-facet="'+facet.name+'" class="" '+ status +' value="'+facet.name+'"> '
+                                      +'<p>'
+                                        + facet.name
+                                        +'<span class="facet-count">(' + facet.count + ')</span>'
+                                      +'</p>'
+                                  // +'</a>'
+                                +'</div>'
+                               +'</div>';
+                              //  console.log($(this))
+        return templateCheckbox
+      });
+  });
+}
+function facetClick(className, facetName){
+  $('.'+className).on('click', 'input[type=checkbox]', function(e) {
+    var facetValue = $(this).data('facet');
+    map.eachLayer(function (layer) {
+        map.removeLayer(layer);
+    });
+    createMap(map)
+    helper.toggleRefinement(facetName, facetValue)
+          .search();
+  });
+}
+
 
 function renderHits(content) {
   var data = content.hits;
-  getData(data)
-  printMarker(map)
 
-
-  $('#container').html(function() {
+  $('#habitation--list').html(function() {
     return $.map(data, function(hit) {
-      return '<li data-id="'+hit.objectID+'">' + hit._snippetResult.post_title.value +'</li>';
+      return hitTemplate(data, hit);
     });
   });
+  $('.search-results__item').each(function(){
+    $(this).on('mouseover', function(){
+      var itemLat = $(this).data('lat');
+      var itemLng = $(this).data('lng');
+      if (itemLat === " ") return
+      if (itemLng === " ") return
+        map.panTo(new L.LatLng(itemLat, itemLng));
+    })
+  })
 
-
-}
-
-function getData(data){
-
-  for (var i = 0; i < data.length; i++) {
-    var hit = data[i]._snippetResult
-
-    var lat = "";
-    var lng = "";
-    if (data[i]._geoloc) {
-      lat = data[i]._geoloc.lat;
-      if (!lat) return
-      lng = data[i]._geoloc.lng
-    }
-    var myHit = {
-      'id'       : hit.post_id,
-      'title'    : hit.post_title.value,
-      'image'    : hit.images.featured.url.value,
-      'url'      : hit.permalink.value,
-      'lat'      : lat,
-      'lng'      : lng,
-      'dataValue': data[i].objectID
-    }
-    // console.log(myHit)
-    allHits.push(myHit)
-
-  }
+  printMarker(data, map)
 
 }
 
@@ -125,50 +117,201 @@ helper.search();
 
 //MARKER
 function createMap(map){
-  //layer
-  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-      attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+  	attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+  	subdomains: 'abcd',
       maxZoom: 18,
   }).addTo(map);
 }
 
+function printMarker(data, map){
 
-function popUp(boxAct){
-
-}
-function printMarker(map){
-
-  var boxAct = "ok"
-  for (var result = 0; result < allHits.length; result++) {
-
-    var hit = allHits[result];
-    var data = hit.data
-    var LeafIcon = L.Icon.extend({
+  return $.map(data, function(hit) {
+    LeafIcon = L.Icon.extend({
         options: {
-            iconSize:     [40, 40],
-            iconAnchor:   [22, 94],
+            iconSize:     [19, 27],
+            iconAnchor:   [0, 0],
             popupAnchor:  [0, -20]
         }
     });
-
     L.icon = function (option) {
         return new L.Icon(options);
     };
-    L.title = data
 
-    var lng = hit.lng;
-    if (!lng) return
-    var lat = hit.lat;
-    if (!lat) return
+    if (hit._geoloc){
+      if (!hit._geoloc.lat) return
+      var lat = hit._geoloc.lat;
+      if (!hit._geoloc.lng) return
+      var lng = hit._geoloc.lng;
 
+      var hitsMarker = new LeafIcon({iconUrl: 'dist/images/marker.png'})
+      var $marker = L.marker([lat,lng], {icon: hitsMarker, title: hit.objectID})
+      .addTo(map)
+      .bindPopup(templatePopUp(data, hit))
 
-    var hitsMarker = new LeafIcon({iconUrl: 'dist/images/marker.png'})
+      $marker.on('mouseover', function(e){
+        this.openPopup(templatePopUp(data, hit))
+      })
 
+      console.log($marker.options.title)
+      $('.search-results__item').each(function(){
+        $(this).on('mouseover', function(){
+          var itemLat = $(this).data('lat');
+          var itemLng = $(this).data('lng');
+          if (itemLat === " ") return
+          if (itemLng === " ") return
+          if ($marker.options.title === $(this).attr('id')) {
+            $marker.openPopup(templatePopUp(data, hit))
+          }
+        })
+      })
 
-    L.marker([lat, lng], {icon: hitsMarker})
-            .addTo(map)
-            .bindPopup('<p>Hello world!<br />This is a nice popup.</p>');
-
-  }
-
+    }
+  });
 }
+
+
+function hoverMarker(){
+  $('.leaflet-marker-icon').on('mouseover', function (e) {
+      this.openPopup();
+
+  });
+  $('.leaflet-marker-icon').on('mouseout', function (e) {
+      this.closePopup();
+  });
+}hoverMarker()
+function hitTemplate(data, hit){
+
+  //check type_annonce
+  var type = hit.type_annonce;
+  var nameType;
+  if (type === "Location") {nameType = "à louer"}
+  else if (type === "Vente") {nameType = "à vendre"}
+  else { nameType = " " }
+
+  var lat = " ";
+  var lng = " ";
+  if (hit._geoloc){
+    if (!hit._geoloc.lat) return
+    var lat = hit._geoloc.lat;
+    if (!hit._geoloc.lng) return
+    var lng = hit._geoloc.lng;
+  }
+  var excerpt = hit.post_excerpt;
+
+  var hitTemplate = '<section id="'+ hit.objectID +'" data-lat="'+ lat +'" data-lng="' + lng + '" class="search-results__item">'+
+  	'<div class="uk-grid">'+
+
+      '<div class="uk-width-1-4">'+
+        '<a href="' + hit.permalink + '" title="' + hit.post_title + '">'+
+        	'<img src="' + hit.images.featured.url + '" alt="" width="200" height="200">'+
+        '</a>'+
+      '</div>'+ //uk-width-1-4
+
+      '<div class="uk-width-3-4">'+
+        '<div class="uk-teaser--property">'+
+          '<h3><a href="' + hit.permalink + '">' + hit.post_title + '</a></h3>'+
+
+
+  				//price
+          '<div class="uk-grid">'+
+
+            '<div class="uk-width-1-2 line-height-min">'+
+
+              '<strong>'+ hit['wpcf-property-price']+ '€</strong>'+
+              '<br>'+
+
+  					//type
+            '<small class="property-type text-gray">'+ hit['wpcf-code-surface'] +' '+ nameType +'</small></div>'+
+
+            '<div class="uk-width-1-2 uk-text-right">'+
+
+  				 		//nb room
+  					  '<span class="uk-badge" title="Pièces">'+
+  					      	'<i class="chicon-box2"></i>'+
+  					    		hit['wpcf-property-allrooms']+
+  					  '</span>'+
+
+  						//surface
+  					  '<span class="uk-badge" title="Surface">'+
+  					      	'<i class="chicon-expand1"></i>'+
+  					    		'12 m<sup>2</sup>'+
+  					  '</span>'+
+
+  						//arrondissement
+  					  '<span class="uk-badge" title="Lieu">'+
+  					      	'<i class="chicon-map-marker"></i>'+
+  					    		'<a href="https://pujol.spade.be/arrondissement/'+ hit.taxonomies.arrondissement +'/">'+ hit.taxonomies.arrondissement +'</a>'+
+  					  '</span>'+
+
+
+            '</div>'+ //uk-width-1-2 uk-text-right
+
+
+          '</div>'+ //uk-width-1-2 line-height-min
+
+          '<div class="excerpt">'+ excerpt.substring(0,150) +'…</div>'+
+          '<div class="uk-teaser__date"><i class="chicon-clock"></i>'+ hit.post_date_formatted +'</div>'+
+
+        '</div>'+ //uk-grid
+
+      '</div>'+  //uk-teaser--property
+    '</section>'; //uk-width-3-4
+    return hitTemplate
+}
+function templatePopUp(data, hit){
+
+  var popUp = '<div id="' + hit.objectID + '" style="overflow:hidden">' +
+                '<a href="' + hit.permalink + '" title="' + hit.post_title + '">'+
+                  '<img src="' + hit.images.featured.url + '" alt="" width="230" height="230">'+
+                '</a>'+
+                '<h3 class="map-title"><a href="' + hit.permalink + '" data-pys-event-id="' + hit.objectID + '">' + hit.post_title + '</a></h3>'+
+                '<div class="uk-clearfix map-title" style="font-size:13px">' + hit.taxonomies_hierarchical.bien.lvl0 + '</div>'+
+                '<div class="uk-float-right">'+
+
+                  '<span class="uk-badge" title="Pièces">'+
+                        '<i class="chicon-box2"></i> '+
+                        hit['wpcf-property-allrooms']+
+                  '</span>'+
+
+
+                  '<span class="uk-badge" title="Surface">'+
+                        '<i class="chicon-expand1"></i>'+
+                        '10.00 m<sup>2</sup>'+
+                  '</span>'+
+
+                  '<span class="uk-badge" title="Lieu">'+
+                        '<i class="chicon-map-marker"></i>'+
+                        '<a href="https://pujol.spade.be/arrondissement/'+ hit.taxonomies.arrondissement +'/">'+ hit.taxonomies.arrondissement +'</a>'+
+                  '</span>'+
+                '</div>'+
+                '<p class="map-price uk-float-left">'+
+                  '<strong>'+ hit['wpcf-property-price']+ '€</strong>'+
+                '</p>'+
+              '</div>';
+  return popUp;
+}
+
+
+// function getData(data){
+//   for (var i = 0; i < data.length; i++) {
+//     var hit = data[i]
+//     var lat = "";
+//     var lng = "";
+//     if (data[i]._geoloc) {
+//       lat = data[i]._geoloc.lat;
+//       if (!lat) return
+//       lng = data[i]._geoloc.lng
+//     }
+//     var myHit = {
+//       'id'       : hit.post_id,
+//       'title'    : hit.post_title.value,
+//       'image'    : hit.images.featured.url.value,
+//       'url'      : hit.permalink.value,
+//       'lat'      : lat,
+//       'lng'      : lng,
+//       'dataValue': data[i].objectID
+//     }
+//     allHits.push(myHit)
+//   }
+// }
