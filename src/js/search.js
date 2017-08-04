@@ -9,18 +9,23 @@ import $ from 'jquery';
 
 //param algolia
 
-var appID = 'appID';
-var appKey = 'appKey';
+var appID ='M2KGCKU1OY';
+var appKey = 'f5cadaff3a60bd354ad9eeb0c9d2bde5';
 var indexName = 'testtest_posts_annonce';
 
 var client = algoliasearch(appID, appKey);
-var helper = algoliasearchHelper(client, indexName, {
-  facets: ['type_annonce', 'wpcf-property-price', 'wpcf-code-surface', 'taxonomies_hierarchical.arrondissement.lvl0' , 'wpcf-type-bien']
-});
+var helper = algoliasearchHelper(client, indexName,
+  {
+  facets: ['type_annonce', 'wpcf-property-price', 'wpcf-code-surface', 'taxonomies_hierarchical.arrondissement.lvl0' , 'wpcf-type-bien'],
+},
+
+);
+
 
 
 //array for popup marker
 var allHits = [];
+var urlResult = [];
 var $container =  document.querySelector('#opts');
 var LeafIcon;
 
@@ -48,22 +53,23 @@ facetClick('bien', 'wpcf-type-bien');
 
 
 function renderFacetList(content) {
-  createInput(content, 'nb-chambre', 'wpcf-code-surface', 'checkbox', 'checked')
-  createInput(content, 'type-annonce', 'type_annonce', 'checkbox', 'checked')
-  createInput(content, 'arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0', 'checkbox', 'checked')
-  createInput(content, 'bien', 'wpcf-type-bien', 'checkbox', 'checked')
+  createCheckBox(content, 'nb-chambre', 'wpcf-code-surface', 'checkbox', 'checked')
+  createCheckBox(content, 'type-annonce', 'type_annonce', 'checkbox', 'checked')
+  createCheckBox(content, 'arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0', 'checkbox', 'checked')
+  createCheckBox(content, 'bien', 'wpcf-type-bien', 'checkbox', 'checked')
 }
 
 
-function createInput(content, className, facetName, type, isRefined){
+function createCheckBox(content, className, facetName, type, isRefined){
     $('.' + className).html(function() {
       return $.map(content.getFacetValues(facetName), function(facet) {
         var status = 'unchecked'
+        var theName = facet.name
         if(facet.isRefined) status = 'checked';
         var templateCheckbox = '<div class="ais-menu--item">'
                                 +'<div class="flex-item">'
                                   // +'<a href="javascript:void(0);" class="facet-item">'
-                                    +'<input id="'+facet.name+'" type="checkbox" data-facet="'+facet.name+'" class="" '+ status +' value="'+facet.name+'"> '
+                                    +'<input id="'+theName.replace('/', '-').replace(' ','-')+'" type="checkbox" data-facet="'+theName.replace('/', '-').replace(' ','-')+'" class="" '+ status +' value="'+theName.replace('/', '-').replace(' ','-')+'"> '
                                       +'<p>'
                                         + facet.name
                                         +'<span class="facet-count">(' + facet.count + ')</span>'
@@ -76,6 +82,42 @@ function createInput(content, className, facetName, type, isRefined){
       });
   });
 }
+
+// function createRange(content, className, facetName, type, isRefined){
+//     $('.' + className).html(function() {
+//       return $.map(content.getFacetValues(facetName), function(facet) {
+//         var status = 'unchecked'
+//         if(facet.isRefined) status = 'checked';
+//         var templateCheckbox = '<div class="ais-menu--item">'
+//                                 +'<div class="flex-item">'
+//                                   // +'<a href="javascript:void(0);" class="facet-item">'
+//                                     +'<input id="'+facet.name+'" type="checkbox" data-facet="'+facet.name+'" class="" '+ status +' value="'+facet.name+'"> '
+//                                       +'<p>'
+//                                         + facet.name
+//                                         +'<span class="facet-count">(' + facet.count + ')</span>'
+//                                       +'</p>'
+//                                   // +'</a>'
+//                                 +'</div>'
+//                                +'</div>';
+//                               //  console.log($(this))
+//         return templateCheckbox
+//       });
+//   });
+// }
+
+function injectDataUrl(){
+  var url = location.href;
+  url = url.split('&')
+  // var toCheck = document.querySelectorAll('input[type=checkbox]')
+  console.log(toCheck)
+  for (var i = 0; i < url.length; i++) {
+    var theUrl = url[i].replace(/^.+=/,'');
+
+
+  }
+
+}injectDataUrl()
+
 function facetClick(className, facetName){
   $('.'+className).on('click', 'input[type=checkbox]', function(e) {
     var facetValue = $(this).data('facet');
@@ -85,9 +127,30 @@ function facetClick(className, facetName){
     createMap(map)
     helper.toggleRefinement(facetName, facetValue)
           .search();
+
+    if($(this).is(':checked')) {
+      urlResult.push(className+'='+facetValue)
+      var theUrl = urlResult.join('&').toLowerCase();
+      location = '#q&'+theUrl;
+
+    } else {
+        var index = urlResult.indexOf(className+'='+facetValue)
+        if (index > -1) {
+          urlResult.splice(index, 1);
+          var theUrl = urlResult.join('&').toLowerCase();
+          location = '#q&'+theUrl
+
+        }
+    }
+    // getUrl(className,facetValue)
   });
 }
+function getUrl(className,facetValue){
+  urlResult.push(className+'='+facetValue)
+  var theUrl = urlResult.join('&').toLowerCase();
+  location = '#q&'+theUrl
 
+}
 
 function renderHits(content) {
   var data = content.hits;
@@ -111,9 +174,7 @@ function renderHits(content) {
 
 }
 
-
 helper.search();
-
 
 //MARKER
 function createMap(map){
@@ -153,7 +214,6 @@ function printMarker(data, map){
         this.openPopup(templatePopUp(data, hit))
       })
 
-      console.log($marker.options.title)
       $('.search-results__item').each(function(){
         $(this).on('mouseover', function(){
           var itemLat = $(this).data('lat');
@@ -291,27 +351,3 @@ function templatePopUp(data, hit){
               '</div>';
   return popUp;
 }
-
-
-// function getData(data){
-//   for (var i = 0; i < data.length; i++) {
-//     var hit = data[i]
-//     var lat = "";
-//     var lng = "";
-//     if (data[i]._geoloc) {
-//       lat = data[i]._geoloc.lat;
-//       if (!lat) return
-//       lng = data[i]._geoloc.lng
-//     }
-//     var myHit = {
-//       'id'       : hit.post_id,
-//       'title'    : hit.post_title.value,
-//       'image'    : hit.images.featured.url.value,
-//       'url'      : hit.permalink.value,
-//       'lat'      : lat,
-//       'lng'      : lng,
-//       'dataValue': data[i].objectID
-//     }
-//     allHits.push(myHit)
-//   }
-// }
