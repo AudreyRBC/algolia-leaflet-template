@@ -17,15 +17,15 @@ var client = algoliasearch(appID, appKey);
 var helper = algoliasearchHelper(client, indexName,
   {
   facets: ['type_annonce', 'wpcf-property-price', 'wpcf-code-surface', 'taxonomies_hierarchical.arrondissement.lvl0' , 'wpcf-type-bien'],
-},
+  },
 
 );
-
 
 
 //array for popup marker
 var allHits = [];
 var urlResult = [];
+var dataUrl = []
 var $container =  document.querySelector('#opts');
 var LeafIcon;
 
@@ -39,10 +39,16 @@ var map = L.map('map',{
 
 createMap(map)
 
+
+helper.once('result', function(content) {
+    renderFacetList(content);
+    renderHits(content)
+    injectDataUrl()
+});
+
 helper.on('result', function(content) {
-  renderHits(content)
-  renderFacetList(content);
-  console.log('result here ')
+    renderHits(content)
+    renderFacetList(content);
 });
 
 
@@ -54,10 +60,10 @@ facetClick('bien', 'wpcf-type-bien');
 
 
 function renderFacetList(content) {
-  createCheckBox(content, 'nb-chambre', 'wpcf-code-surface', 'checkbox', 'checked')
-  createCheckBox(content, 'type-annonce', 'type_annonce', 'checkbox', 'checked')
-  createCheckBox(content, 'arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0', 'checkbox', 'checked')
-  createCheckBox(content, 'bien', 'wpcf-type-bien', 'checkbox', 'checked')
+  createCheckBox(content, 'nb-chambre', 'wpcf-code-surface', 'checkbox')
+  createCheckBox(content, 'type-annonce', 'type_annonce', 'checkbox')
+  createCheckBox(content, 'arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0', 'checkbox')
+  createCheckBox(content, 'bien', 'wpcf-type-bien', 'checkbox')
 }
 
 function encodeReplace($str){
@@ -70,7 +76,7 @@ function reverseReplace($str){
   if(typeof $str != 'string') return $str
   return $str.toLowerCase().split('-').join(' ')
 }
-function createCheckBox(content, className, facetName, type, isRefined){
+function createCheckBox(content, className, facetName, type){
     $('.' + className).html(function() {
       return $.map(content.getFacetValues(facetName), function(facet) {
         var status = 'unchecked'
@@ -79,7 +85,7 @@ function createCheckBox(content, className, facetName, type, isRefined){
         var templateCheckbox = '<div class="ais-menu--item">'
                                 +'<div class="flex-item">'
                                   // +'<a href="javascript:void(0);" class="facet-item">'
-                                    +'<input id="'+encodeReplace(theName)+'" type="checkbox" data-facet="'+theName+'" data-name="'+facetName+'" '+ status +' value="'+encodeReplace(theName)+'"> '
+                                    +'<input id="'+encodeReplace(theName)+'" type="checkbox"'+status+' data-facet="'+theName+'" data-name="'+facetName+'" value="'+encodeReplace(theName)+'"> '
                                       +'<p>'
                                         + facet.name
                                         +'<span class="facet-count">(' + facet.count + ')</span>'
@@ -93,28 +99,28 @@ function createCheckBox(content, className, facetName, type, isRefined){
   });
 }
 
-// function createRange(content, className, facetName, type, isRefined){
-//     $('.' + className).html(function() {
-//       return $.map(content.getFacetValues(facetName), function(facet) {
-//         var status = 'unchecked'
-//         if(facet.isRefined) status = 'checked';
-//         var templateCheckbox = '<div class="ais-menu--item">'
-//                                 +'<div class="flex-item">'
-//                                   // +'<a href="javascript:void(0);" class="facet-item">'
-//                                     +'<input id="'+facet.name+'" type="checkbox" data-facet="'+facet.name+'" class="" '+ status +' value="'+facet.name+'"> '
-//                                       +'<p>'
-//                                         + facet.name
-//                                         +'<span class="facet-count">(' + facet.count + ')</span>'
-//                                       +'</p>'
-//                                   // +'</a>'
-//                                 +'</div>'
-//                                +'</div>';
-//                               //  console.log($(this))
-//         return templateCheckbox
-//       });
-//   });
-// }
-var dataUrl = []
+function createRange(content, className, facetName, type, isRefined){
+    $('.' + className).html(function() {
+      return $.map(content.getFacetValues(facetName), function(facet) {
+        var status = 'unchecked'
+        if(facet.isRefined) status = 'checked';
+        var templateCheckbox = '<div class="ais-menu--item">'
+                                +'<div class="flex-item">'
+                                  // +'<a href="javascript:void(0);" class="facet-item">'
+                                    +'<input id="'+facet.name+'" type="checkbox" data-facet="'+facet.name+'" class="" '+ status +' value="'+facet.name+'"> '
+                                      +'<p>'
+                                        + facet.name
+                                        +'<span class="facet-count">(' + facet.count + ')</span>'
+                                      +'</p>'
+                                  // +'</a>'
+                                +'</div>'
+                               +'</div>';
+                              //  console.log($(this))
+        return templateCheckbox
+      });
+  });
+}
+
 function injectDataUrl(){
   var url = location.href;
   url = url.replace(/^.+#q/,'').split('&')
@@ -130,17 +136,10 @@ function injectDataUrl(){
     dataUrl.push(theUrl)
   }
   pushValue(dataUrl)
-
-
-}injectDataUrl()
-
+}
 
 
 function pushValue(dataUrl){
-
-  console.table(dataUrl)
-  //helper.on('result', function(test) {
-    console.log('result here 2')
     for (var j = 0; j < dataUrl.length; j++) {
       var data = dataUrl[j].data;
       var values = dataUrl[j].value;
@@ -153,31 +152,28 @@ function pushValue(dataUrl){
           const $head = $heads[k]
 
           if ($head.getAttribute('data-url') === data) {
-            // console.log($head.getAttribute('data-url'))
-            // console.log(data, values, facet, valueFacet)
+
 
               const $inputs = $head.querySelectorAll('[data-facet]');
-
               for (var l = 0; l < $inputs.length; l++) {
+
                 var $input = $inputs[l]
-                  if($input.value === values) if($input.checked === false) $input.checked = true;
-                // else $input.checked = false;
-                console.log('test',test)
+
+                if($input.value === values){
+                  map.eachLayer(function (layer) {
+                      map.removeLayer(layer);
+                  });
+                  helper.toggleFacetRefinement(facet, valueFacet).search()
+                  // $input.removeAttribute('unchecked') ;
+                  // $input.setAttribute('checked', 'checked') ;
+                  console.log($input)
+                }
+
               }
             }
           }
-
-          helper.toggleRefinement(facet, valueFacet).search()
       }
-  //});
 }
-
-
-
-// facetClick('nb-chambre', 'wpcf-code-surface');
-// facetClick('type-annonce', 'type_annonce');
-// facetClick('arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0');
-// facetClick('bien', 'wpcf-type-bien');
 
 
 
@@ -207,14 +203,8 @@ function facetClick(className, facetName){
 
         }
     }
-    // getUrl(className,facetValue)
-  });
-}
-function getUrl(className,facetValue){
-  urlResult.push(className+'='+encodeReplace(facetValue))
-  var theUrl = urlResult.join('&').toLowerCase();
-  location = '#q&'+theUrl
 
+  });
 }
 
 function renderHits(content) {
