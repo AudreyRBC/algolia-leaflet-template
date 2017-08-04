@@ -59,7 +59,16 @@ function renderFacetList(content) {
   createCheckBox(content, 'bien', 'wpcf-type-bien', 'checkbox', 'checked')
 }
 
-
+function encodeReplace($str){
+  if(!$str) return
+  if(typeof $str != 'string') return $str
+  return $str.toLowerCase().split(' ').join('-')
+}
+function reverseReplace($str){
+  if(!$str) return
+  if(typeof $str != 'string') return $str
+  return $str.toLowerCase().split('-').join(' ')
+}
 function createCheckBox(content, className, facetName, type, isRefined){
     $('.' + className).html(function() {
       return $.map(content.getFacetValues(facetName), function(facet) {
@@ -69,7 +78,7 @@ function createCheckBox(content, className, facetName, type, isRefined){
         var templateCheckbox = '<div class="ais-menu--item">'
                                 +'<div class="flex-item">'
                                   // +'<a href="javascript:void(0);" class="facet-item">'
-                                    +'<input id="'+theName.replace('/', '-').replace(' ','-')+'" type="checkbox" data-facet="'+theName.replace('/', '-').replace(' ','-')+'" class="" '+ status +' value="'+theName.replace('/', '-').replace(' ','-')+'"> '
+                                    +'<input id="'+encodeReplace(theName)+'" type="checkbox" data-facet="'+theName+'" data-name="'+facetName+'" '+ status +' value="'+encodeReplace(theName)+'"> '
                                       +'<p>'
                                         + facet.name
                                         +'<span class="facet-count">(' + facet.count + ')</span>'
@@ -104,23 +113,77 @@ function createCheckBox(content, className, facetName, type, isRefined){
 //       });
 //   });
 // }
-
+var dataUrl = []
 function injectDataUrl(){
   var url = location.href;
-  url = url.split('&')
-  // var toCheck = document.querySelectorAll('input[type=checkbox]')
-  console.log(toCheck)
+  url = url.replace(/^.+#q/,'').split('&')
+  url = url.filter(v => v!='')
+
   for (var i = 0; i < url.length; i++) {
-    var theUrl = url[i].replace(/^.+=/,'');
-
-
+    var theUrl = url[i].split('=')
+    theUrl = {
+      'facet' : theUrl[0],
+      'data' : theUrl[1],
+      'value' : theUrl[2],
+    };
+    dataUrl.push(theUrl)
   }
+  pushValue(dataUrl)
+
 
 }injectDataUrl()
+
+
+
+function pushValue(dataUrl){
+
+  console.table(dataUrl)
+  setTimeout(function(){
+  for (var j = 0; j < dataUrl.length; j++) {
+    var data = dataUrl[j].data;
+    var values = dataUrl[j].value;
+    var facet = dataUrl[j].facet;
+    var valueFacet = reverseReplace(values)
+
+
+      const $heads = document.querySelectorAll('[data-url]')
+      for (var k = 0; k < $heads.length; k++) {
+        const $head = $heads[k]
+
+        if ($head.getAttribute('data-url') === data) {
+          // console.log($head.getAttribute('data-url'))
+          // console.log(data, values, facet, valueFacet)
+
+            const $inputs = $head.querySelectorAll('[data-facet]');
+
+            for (var l = 0; l < $inputs.length; l++) {
+              var $input = $inputs[l]
+                if($input.value === values) if($input.checked === false) $input.checked = true;
+              // else $input.checked = false;
+              helper.toggleRefinement(facet, valueFacet).search()
+
+            }
+          }
+        }
+
+    }
+  }, 180);
+}
+
+
+
+// facetClick('nb-chambre', 'wpcf-code-surface');
+// facetClick('type-annonce', 'type_annonce');
+// facetClick('arrondissement', 'taxonomies_hierarchical.arrondissement.lvl0');
+// facetClick('bien', 'wpcf-type-bien');
+
+
 
 function facetClick(className, facetName){
   $('.'+className).on('click', 'input[type=checkbox]', function(e) {
     var facetValue = $(this).data('facet');
+    facetValue = facetValue
+    var facetEncode = encodeReplace(facetValue)
     map.eachLayer(function (layer) {
         map.removeLayer(layer);
     });
@@ -129,12 +192,12 @@ function facetClick(className, facetName){
           .search();
 
     if($(this).is(':checked')) {
-      urlResult.push(className+'='+facetValue)
+      urlResult.push(facetName+'='+className+'='+facetEncode)
       var theUrl = urlResult.join('&').toLowerCase();
       location = '#q&'+theUrl;
 
     } else {
-        var index = urlResult.indexOf(className+'='+facetValue)
+        var index = urlResult.indexOf(facetName+'='+className+'='+facetEncode)
         if (index > -1) {
           urlResult.splice(index, 1);
           var theUrl = urlResult.join('&').toLowerCase();
@@ -146,7 +209,7 @@ function facetClick(className, facetName){
   });
 }
 function getUrl(className,facetValue){
-  urlResult.push(className+'='+facetValue)
+  urlResult.push(className+'='+encodeReplace(facetValue))
   var theUrl = urlResult.join('&').toLowerCase();
   location = '#q&'+theUrl
 
