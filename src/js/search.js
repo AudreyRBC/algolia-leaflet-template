@@ -42,6 +42,7 @@ createMap(map)
 helper.on('result', function(content) {
   renderHits(content)
   renderFacetList(content);
+  console.log('result here ')
 });
 
 
@@ -138,36 +139,37 @@ function injectDataUrl(){
 function pushValue(dataUrl){
 
   console.table(dataUrl)
-  setTimeout(function(){
-  for (var j = 0; j < dataUrl.length; j++) {
-    var data = dataUrl[j].data;
-    var values = dataUrl[j].value;
-    var facet = dataUrl[j].facet;
-    var valueFacet = reverseReplace(values)
+  //helper.on('result', function(test) {
+    console.log('result here 2')
+    for (var j = 0; j < dataUrl.length; j++) {
+      var data = dataUrl[j].data;
+      var values = dataUrl[j].value;
+      var facet = dataUrl[j].facet;
+      var valueFacet = reverseReplace(values)
 
 
-      const $heads = document.querySelectorAll('[data-url]')
-      for (var k = 0; k < $heads.length; k++) {
-        const $head = $heads[k]
+        const $heads = document.querySelectorAll('[data-url]')
+        for (var k = 0; k < $heads.length; k++) {
+          const $head = $heads[k]
 
-        if ($head.getAttribute('data-url') === data) {
-          // console.log($head.getAttribute('data-url'))
-          // console.log(data, values, facet, valueFacet)
+          if ($head.getAttribute('data-url') === data) {
+            // console.log($head.getAttribute('data-url'))
+            // console.log(data, values, facet, valueFacet)
 
-            const $inputs = $head.querySelectorAll('[data-facet]');
+              const $inputs = $head.querySelectorAll('[data-facet]');
 
-            for (var l = 0; l < $inputs.length; l++) {
-              var $input = $inputs[l]
-                if($input.value === values) if($input.checked === false) $input.checked = true;
-              // else $input.checked = false;
-              helper.toggleRefinement(facet, valueFacet).search()
-
+              for (var l = 0; l < $inputs.length; l++) {
+                var $input = $inputs[l]
+                  if($input.value === values) if($input.checked === false) $input.checked = true;
+                // else $input.checked = false;
+                console.log('test',test)
+              }
             }
           }
-        }
 
-    }
-  }, 180);
+          helper.toggleRefinement(facet, valueFacet).search()
+      }
+  //});
 }
 
 
