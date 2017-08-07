@@ -41,8 +41,6 @@
     "algoliasearch": "^3.24.0",
     "algoliasearch-helper": "^2.21.0",
     "extract-text-webpack-plugin": "^1.0.1",
-    "instantsearch-googlemaps": "^1.2.6",
-    "instantsearch.js": "^2.0.1",
     "jquery": "^3.2.1",
     "slick-carousel": "^1.6.0"
   }
